@@ -1,0 +1,24 @@
+{application, erotik,
+	[
+		{description, ""},
+		{vsn, "1"},
+		{registered, []},
+		{applications, [
+			kernel,
+			stdlib
+		]},
+		{mod, {erotik_app, []}},
+		{env,
+			[
+				{routers,
+					[
+						[
+							{host, "95.154.91.91"},
+							{port, 8728},
+							{login, "admin"},
+							{password, "wifi"}
+						]
+					]
+				}
+			]}
+	]}.
