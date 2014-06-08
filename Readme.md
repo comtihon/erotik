@@ -24,3 +24,7 @@ Command `command` takes router's pid or atom name as first argument and list of 
 Example:
 
     erotik:command('My super router', ["/ip/firewall/filter/set", "=disabled=no", "=.id=*D"]).
+    
+### Configuring
+Note, that default wait for response time is infinity. To avoid this - you can set env `me_connector_wait_time` in your `application.conf` file,
+providing positive integer number, which will be a new delay value.
