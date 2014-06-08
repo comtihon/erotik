@@ -39,6 +39,7 @@
 -spec(start_link(Args :: term()) ->
 	{ok, Pid :: pid()} | ignore | {error, Reason :: term()}).
 start_link({Name, Config}) ->
+	io:format("Starting ~p~n", [Name]),
 	gen_server:start_link({local, list_to_atom(Name)}, ?MODULE, Config, []).
 
 %%%===================================================================
@@ -83,6 +84,9 @@ init(Config) ->
 	{noreply, NewState :: #state{}, timeout() | hibernate} |
 	{stop, Reason :: term(), Reply :: term(), NewState :: #state{}} |
 	{stop, Reason :: term(), NewState :: #state{}}).
+handle_call({command, List}, _From, State = #state{socket = S}) ->
+	Reply = me_logic:send_command(S, List),
+	{reply, Reply, State};
 handle_call(_Request, _From, State) ->
 	{reply, ok, State}.
 

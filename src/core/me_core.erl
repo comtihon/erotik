@@ -46,7 +46,7 @@ hex_to_binary(HexList) ->
 
 %% @private
 encode(Len, Bor) ->
-	Binary = binary:encode_unsigned(Len), %TODO endiannes
+	Binary = binary:encode_unsigned(Len),
 	[First | Tail] = binary:bin_to_list(Binary),  %TODO better solution?
 	list_to_binary([First bor Bor | Tail]).
 

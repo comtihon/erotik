@@ -12,11 +12,18 @@
 -include("me_transport.hrl").
 
 %% API
--export([read_sentence/1, write_sentence/2]).
+-export([read_sentence/1, write_sentence/2, read_block/1]).
 
 write_sentence(Socket, Sentence) ->
 	lists:foreach(fun(Word) -> write_word(Socket, Word) end, Sentence),
 	write_word(Socket, ?EOF).
+
+read_block(Socket) -> read_block(Socket, []).
+read_block(Socket, Block) ->
+	case read_sentence(Socket) of
+		{false, Sentence} -> read_block(Socket, [Sentence | Block]);
+		{_Result, Sentence} -> lists:reverse([Sentence | Block])
+	end.
 
 read_sentence(Socket) -> read_sentence(Socket, [], false).
 read_sentence(Socket, Acc, Spec) ->
