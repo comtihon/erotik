@@ -28,6 +28,6 @@ init([]) ->
 			Host = proplists:get_value(host, Router),
 			Port = proplists:get_value(port, Router),
 			Name = lists:concat([Host, ":", Port]),
-			[?CHILD(me_connector, Name, worker, [{Name, Router}]) | Acc]
+			[?CHILD(me_connector, Name, worker, [Name, Router]) | Acc]
 		end, [], Routers),
 	{ok, {{one_for_one, 5, 10}, Children}}.

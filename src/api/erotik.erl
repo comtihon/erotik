@@ -10,12 +10,16 @@
 -author("tihon").
 
 %% API
--export([get_users/1, command/2]).
+-export([get_users/1, command/2, get_firewall/1]).
 
 
 -spec get_users(Router :: atom() | pid()) -> any().
 get_users(Router) ->
 	command(Router, ["/interface/wireless/registration-table/print"]).
+
+-spec get_users(Router :: atom() | pid()) -> any().
+get_firewall(Router) ->
+	command(Router, ["/ip/firewall/filter/print"]).
 
 -spec command(Router :: atom() | pid(), Command :: list()) -> any().
 command(Router, Command) ->

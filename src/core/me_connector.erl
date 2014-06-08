@@ -12,7 +12,7 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/1]).
+-export([start_link/2]).
 
 %% gen_server callbacks
 -export([init/1,
@@ -36,11 +36,13 @@
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec(start_link(Args :: term()) ->
+-spec(start_link(Name :: string() | atom(), Config :: proplists:proplist()) ->
 	{ok, Pid :: pid()} | ignore | {error, Reason :: term()}).
-start_link({Name, Config}) ->
+start_link(Name, Config) when not is_atom(Name) ->
+	start_link(list_to_atom(Name), Config);
+start_link(Name, Config) ->
 	io:format("Starting ~p~n", [Name]),
-	gen_server:start_link({local, list_to_atom(Name)}, ?MODULE, Config, []).
+	gen_server:start_link({local, Name}, ?MODULE, Config, []).
 
 %%%===================================================================
 %%% gen_server callbacks
