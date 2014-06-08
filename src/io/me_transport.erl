@@ -45,8 +45,8 @@ write_word(Socket, Word) ->
 
 %% @private
 read_word(Socket) ->
-	{ok, FirstLen} = gen_tcp:recv(Socket, 1),
-	case binary:decode_unsigned(me_core:decode_len(list_to_binary(FirstLen), Socket)) of
+	{ok, [FirstLen]} = gen_tcp:recv(Socket, 1),
+	case binary:decode_unsigned(me_core:decode_len(FirstLen, Socket)) of
 		0 -> [];
 		Len ->
 			{ok, Word} = gen_tcp:recv(Socket, Len),

@@ -19,6 +19,7 @@
 							{password, "wifi"}
 						]
 					]
-				}
+				},
+				{me_connector_wait_time, 5000}
 			]}
 	]}.

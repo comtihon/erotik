@@ -16,16 +16,16 @@
 decode_len(Len, Socket) when (Len band 16#E0) == 16#E0 -> % 4 bytes len
 	First = Len band 16#1F,
 	{ok, Rest} = gen_tcp:recv(Socket, 3),
-	<<First, Rest>>;
+	list_to_binary([First | Rest]);
 decode_len(Len, Socket) when (Len band 16#C0) == 16#C0 -> % 3 bytes len
 	First = Len band 16#3f,
 	{ok, Rest} = gen_tcp:recv(Socket, 2),
-	<<First, Rest>>;
+	list_to_binary([First | Rest]);
 decode_len(Len, Socket) when (Len band 16#80) == 16#80 -> % 2 bytes len
 	First = Len band 16#7f,
 	{ok, Rest} = gen_tcp:recv(Socket, 1),
-	<<First, Rest>>;
-decode_len(Len, _) -> Len.  % 1 bytes len
+	list_to_binary([First | Rest]);
+decode_len(Len, _) ->	<<Len>>.  % 1 bytes len
 
 encode_len(Len) when Len < 16#80 -> binary:encode_unsigned(Len); % 1 bytes len
 encode_len(Len) when Len < 16#4000 -> encode(Len, 16#80); % 2 bytes len
