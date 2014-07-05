@@ -12,7 +12,7 @@ Example:
     Login = "admin",
     Password = "password",
     Config = [{host, Host}, {port, Port}, {login, Login}, {password, Password}],
-    Worker = me_connector:start_link(Name, Config).
+    {ok, Worker} = me_connector:start_link(Name, Config).
 When you start connection - it automatically connects to router and tries to authorize. That's why connections are locally registered. 
 It is cheaper to use one connection per router, than start and auth new connection each time. __Note__ authorization may not succeed 
 at the first attempt, I don't know why router behaves such way, but advice to put connection under `supervisor`, as permanent or transient.  
