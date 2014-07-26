@@ -1,9 +1,8 @@
 Erlang Mikrotik client
 ======================
 ### Connecting
-To connect to mikrotik start new connection process `me_connection`. __Note__, that connection process registers locally.   
-To start connection you should pass a string | atom - unique `name` and a proplist `config`. 
-Config must contain string `host`, integer `port`, string `login` and string `password`.  
+#### Api connection
+To connect to mikrotik start new connection process with `erotik:api_connect/5`. __Note__, that connection process registers locally.   
 Example:
 
     Name = "My super router",
@@ -11,11 +10,27 @@ Example:
     Port = 8728,
     Login = "admin",
     Password = "password",
-    Config = [{host, Host}, {port, Port}, {login, Login}, {password, Password}],
-    {ok, Worker} = me_connector:start_link(Name, Config).
+    {ok, Worker} = erotik:api_connect(Name, Host, Port, Login, Password).
 When you start connection - it automatically connects to router and tries to authorize. That's why connections are locally registered. 
 It is cheaper to use one connection per router, than start and auth new connection each time. __Note__ authorization may not succeed 
 at the first attempt, I don't know why router behaves such way, but advice to put connection under `supervisor`, as permanent or transient.  
+
+#### SSH connection
+To connect to mikrotik through ssh - use `erotik:ssh_connect/5`. __Note__, that connection process registers locally.  
+Example:
+
+    Name = "My super router",
+    Host = "127.0.0.1",
+    Port = 8728,
+    Login = "admin",
+    Password = "password",
+    {ok, Worker} = erotik:ssh_connect(Name, Host, Port, Login, Password).
+__Note__, for ssh connection to work - all dependend application should be started!  
+    
+    ok = application:start(crypto).
+    ok = application:start(asn1).
+    ok = application:start(public_key).
+    ok = application:start(ssh).
 
 ### Executing commands
 Now you can use api module `erotik` to call commands. There are several ready commands and `command/2` function, to which 

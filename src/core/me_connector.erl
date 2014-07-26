@@ -24,7 +24,12 @@
 
 -define(SERVER, ?MODULE).
 
--record(state, {socket}).
+-record(state,
+{
+	socket :: port(),
+	ssh_ref :: pid(),
+	channel_ids :: dict:dict()
+}).
 
 %%%===================================================================
 %%% API
@@ -36,12 +41,11 @@
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec(start_link(Name :: string() | atom(), Config :: proplists:proplist()) ->
+-spec(start_link(Name :: string() | atom(), {atom(), Config :: proplists:proplist()}) ->
 	{ok, Pid :: pid()} | ignore | {error, Reason :: term()}).
 start_link(Name, Config) when not is_atom(Name) ->
 	start_link(list_to_atom(Name), Config);
 start_link(Name, Config) ->
-	io:format("Starting ~p~n", [Name]),
 	gen_server:start_link({local, Name}, ?MODULE, Config, []).
 
 %%%===================================================================
@@ -62,11 +66,12 @@ start_link(Name, Config) ->
 -spec(init(Config :: proplists:proplist()) ->
 	{ok, State :: #state{}} | {ok, State :: #state{}, timeout() | hibernate} |
 	{stop, Reason :: term()} | ignore).
-init(Config) ->
-	Host = proplists:get_value(host, Config),
-	Port = proplists:get_value(port, Config),
-	Login = proplists:get_value(login, Config),
-	Password = proplists:get_value(password, Config),
+init({ssh, Config}) ->
+	{Host, Port, Login, Password} = parse_params(Config),
+	{ok, SSHRef} = me_ssh:connect(Host, Port, Login, Password),
+	{ok, #state{ssh_ref = SSHRef, channel_ids = dict:new()}};
+init({api, Config}) ->
+	{Host, Port, Login, Password} = parse_params(Config),
 	{ok, Socket} = gen_tcp:connect(Host, Port, [{active, false}]),  %TODO change to active true and stream dencoding
 	gen_server:cast(self(), {login, Login, Password}),
 	{ok, #state{socket = Socket}}.
@@ -86,9 +91,12 @@ init(Config) ->
 	{noreply, NewState :: #state{}, timeout() | hibernate} |
 	{stop, Reason :: term(), Reply :: term(), NewState :: #state{}} |
 	{stop, Reason :: term(), NewState :: #state{}}).
-handle_call({command, List}, _From, State = #state{socket = S}) ->
+handle_call({command, List}, _From, State = #state{socket = S}) when S /= undefined ->  %working through api
 	Reply = me_logic:send_command(S, List),
 	{reply, Reply, State};
+handle_call({command, List}, From, State = #state{ssh_ref = SSHRef, channel_ids = Dict}) -> %working through ssh
+	ChannelId = me_logic:send_command(SSHRef, List),
+	{noreply, State#state{channel_ids = dict:append(ChannelId, From, Dict)}};
 handle_call(_Request, _From, State) ->
 	{reply, ok, State}.
 
@@ -123,6 +131,16 @@ handle_cast(_Request, State) ->
 	{noreply, NewState :: #state{}} |
 	{noreply, NewState :: #state{}, timeout() | hibernate} |
 	{stop, Reason :: term(), NewState :: #state{}}).
+handle_info({ssh_cm, _, {data, ChannelId, _, Message}}, State = #state{channel_ids = Dict}) ->  %get part of ssh data
+	{noreply, State#state{channel_ids = dict:append(ChannelId, binary_to_list(Message), Dict)}};
+handle_info({ssh_cm, _, {closed, ChannelId}}, State = #state{channel_ids = Dict}) -> %ssh channel closed - return data to client
+	case dict:find(ChannelId, Dict) of
+		{ok, List} ->
+			[From | Messages] = List,
+			gen_server:reply(From, lists:concat(Messages)),
+			{noreply, State#state{channel_ids = dict:erase(ChannelId, Dict)}};
+		error -> {noreply, State}
+	end;
 handle_info(_Info, State) ->
 	{noreply, State}.
 
@@ -159,3 +177,9 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+parse_params(Config) ->
+	Host = proplists:get_value(host, Config),
+	Port = proplists:get_value(port, Config),
+	Login = proplists:get_value(login, Config),
+	Password = proplists:get_value(password, Config),
+	{Host, Port, Login, Password}.

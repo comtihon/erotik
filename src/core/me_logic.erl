@@ -12,18 +12,21 @@
 %% API
 -export([do_login/3, send_command/2]).
 
-send_command(Socket, Command) when not is_list(Command) -> send_command(Socket, [Command]);
+send_command(SSHRef, Command) when is_pid(SSHRef) ->  %ssh
+	{success, ChannelId} = me_ssh:send(SSHRef, Command),
+	ChannelId;
+send_command(Socket, Command) when not is_list(Command) -> send_command(Socket, [Command]); %api
 send_command(Socket, Command) ->
-	me_transport:write_sentence(Socket, Command),
-	me_transport:read_block(Socket).
+	me_api:write_sentence(Socket, Command),
+	me_api:read_block(Socket).
 
 do_login(Socket, Login, Password) ->
-	me_transport:write_sentence(Socket, ["/login"]),
-	Salt = get_salt(me_transport:read_sentence(Socket)),
+	me_api:write_sentence(Socket, ["/login"]),
+	Salt = get_salt(me_api:read_sentence(Socket)),
 	Hash = count_hash(Password, Salt),
 	LoginRequest = form_login_sentence(Login, Hash),
-	me_transport:write_sentence(Socket, LoginRequest),
-	{done, ["!done"]} = me_transport:read_sentence(Socket),
+	me_api:write_sentence(Socket, LoginRequest),
+	{done, ["!done"]} = me_api:read_sentence(Socket),
 	ok.
 
 %% @private

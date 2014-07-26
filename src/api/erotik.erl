@@ -10,15 +10,18 @@
 -author("tihon").
 
 %% API
--export([get_users/1, command/2, get_firewall/1]).
+-export([api_connect/5, ssh_connect/5]).
+-export([command/2]).
 
--spec get_users(Router :: atom() | pid()) -> any().
-get_users(Router) ->
-	command(Router, ["/interface/wireless/registration-table/print"]).
+-spec api_connect(string(), string(), integer(), string(), string()) -> {ok, pid()}.
+api_connect(Name, Host, Port, Login, Password) ->
+	Config = [{host, Host}, {port, Port}, {login, Login}, {password, Password}],
+	me_connector:start_link(Name, {api, Config}).
 
--spec get_firewall(Router :: atom() | pid()) -> any().
-get_firewall(Router) ->
-	command(Router, ["/ip/firewall/filter/print"]).
+-spec ssh_connect(string(), string(), integer(), string(), string()) -> {ok, pid()}.
+ssh_connect(Name, Host, Port, Login, Password) ->
+	Config = [{host, Host}, {port, Port}, {login, Login}, {password, Password}],
+	me_connector:start_link(Name, {ssh, Config}).
 
 -spec command(Router :: atom() | pid(), Command :: list()) -> any().
 command(Router, Command) ->

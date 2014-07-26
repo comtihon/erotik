@@ -2,3 +2,4 @@ ebin
 *.beam
 .idea
 *.iml
+.rebar
