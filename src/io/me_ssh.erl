@@ -16,7 +16,7 @@
 
 -spec connect(string(), integer(), string(), string(), integer()) -> {ok, pid()}.
 connect(Host, Port, Login, Password, Timeout) ->
-	ssh:connect(Host, Port, [{user, Login}, {password, Password}, {silently_accept_hosts, true}], Timeout).
+	ssh:connect(Host, Port, [{user, Login}, {password, Password}, {silently_accept_hosts, true}, {connect_timeout, Timeout}]).
 
 -spec send(pid(), term()) -> ok | {error, timeout} | {error, closed}.
 send(SSHRef, Command) ->
