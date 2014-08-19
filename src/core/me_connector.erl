@@ -67,12 +67,12 @@ start_link(Name, Config) ->
 	{ok, State :: #state{}} | {ok, State :: #state{}, timeout() | hibernate} |
 	{stop, Reason :: term()} | ignore).
 init({ssh, Config}) ->
-	{Host, Port, Login, Password} = parse_params(Config),
-	{ok, SSHRef} = me_ssh:connect(Host, Port, Login, Password),
+	{Host, Port, Login, Password, Timeout} = parse_params(Config),
+	{ok, SSHRef} = me_ssh:connect(Host, Port, Login, Password, Timeout),
 	{ok, #state{ssh_ref = SSHRef, channel_ids = dict:new()}};
 init({api, Config}) ->
-	{Host, Port, Login, Password} = parse_params(Config),
-	{ok, Socket} = gen_tcp:connect(Host, Port, [{active, false}]),  %TODO change to active true and stream dencoding
+	{Host, Port, Login, Password, Timeout} = parse_params(Config),
+	{ok, Socket} = gen_tcp:connect(Host, Port, [{active, false}], Timeout),  %TODO change to active true and stream dencoding
 	gen_server:cast(self(), {login, Login, Password}),
 	{ok, #state{socket = Socket}}.
 
@@ -182,4 +182,5 @@ parse_params(Config) ->
 	Port = proplists:get_value(port, Config),
 	Login = proplists:get_value(login, Config),
 	Password = proplists:get_value(password, Config),
-	{Host, Port, Login, Password}.
+	Timeout = proplists:get_value(timeout, Config, infinity),
+	{Host, Port, Login, Password, Timeout}.

@@ -10,7 +10,7 @@
 -author("tihon").
 
 %% API
--export([api_connect/5, ssh_connect/5]).
+-export([api_connect/5, ssh_connect/5, api_connect/6, ssh_connect/6]).
 -export([command/2]).
 
 -spec api_connect(string(), string(), integer(), string(), string()) -> {ok, pid()}.
@@ -18,9 +18,21 @@ api_connect(Name, Host, Port, Login, Password) ->
 	Config = [{host, Host}, {port, Port}, {login, Login}, {password, Password}],
 	me_connector:start_link(Name, {api, Config}).
 
+%% same as api_connect, but with timeout in milliseconds
+-spec api_connect(string(), string(), integer(), string(), string(), integer()) -> {ok, pid()}.
+api_connect(Name, Host, Port, Login, Password, Timeout) ->
+	Config = [{host, Host}, {port, Port}, {login, Login}, {password, Password}, {timeout, Timeout}],
+	me_connector:start_link(Name, {api, Config}).
+
 -spec ssh_connect(string(), string(), integer(), string(), string()) -> {ok, pid()}.
 ssh_connect(Name, Host, Port, Login, Password) ->
 	Config = [{host, Host}, {port, Port}, {login, Login}, {password, Password}],
+	me_connector:start_link(Name, {ssh, Config}).
+
+%% same as ssh_connect, but with timeout in milliseconds
+-spec ssh_connect(string(), string(), integer(), string(), string(), integer()) -> {ok, pid()}.
+ssh_connect(Name, Host, Port, Login, Password, Timeout) ->
+	Config = [{host, Host}, {port, Port}, {login, Login}, {password, Password}, {timeout, Timeout}],
 	me_connector:start_link(Name, {ssh, Config}).
 
 -spec command(Router :: atom() | pid(), Command :: list()) -> any().
