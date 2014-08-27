@@ -66,15 +66,9 @@ start_link(Name, Config) ->
 -spec(init(Config :: proplists:proplist()) ->
 	{ok, State :: #state{}} | {ok, State :: #state{}, timeout() | hibernate} |
 	{stop, Reason :: term()} | ignore).
-init({ssh, Config}) ->
-	{Host, Port, Login, Password, Timeout} = parse_params(Config),
-	{ok, SSHRef} = me_ssh:connect(Host, Port, Login, Password, Timeout),
-	{ok, #state{ssh_ref = SSHRef, channel_ids = dict:new()}};
-init({api, Config}) ->
-	{Host, Port, Login, Password, Timeout} = parse_params(Config),
-	{ok, Socket} = gen_tcp:connect(Host, Port, [{active, false}], Timeout),  %TODO change to active true and stream dencoding
-	gen_server:cast(self(), {login, Login, Password}),
-	{ok, #state{socket = Socket}}.
+init(Params) ->
+	gen_server:cast(self(), {connect, Params}),
+	{ok, #state{}}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -111,9 +105,15 @@ handle_call(_Request, _From, State) ->
 	{noreply, NewState :: #state{}} |
 	{noreply, NewState :: #state{}, timeout() | hibernate} |
 	{stop, Reason :: term(), NewState :: #state{}}).
-handle_cast({login, Login, Password}, State = #state{socket = Sock}) ->
-	ok = me_logic:do_login(Sock, Login, Password),
-	{noreply, State};
+handle_cast({connect, {ssh, Config}}, State) ->
+	{Host, Port, Login, Password, Timeout} = parse_params(Config),
+	{ok, SSHRef} = me_ssh:connect(Host, Port, Login, Password, Timeout),
+	{noreply, State#state{ssh_ref = SSHRef, channel_ids = dict:new()}};
+handle_cast({connect, {api, Config}}, State) ->
+	{Host, Port, Login, Password, Timeout} = parse_params(Config),
+	{ok, Socket} = gen_tcp:connect(Host, Port, [{active, false}], Timeout),  %TODO change to active true and stream dencoding
+	ok = me_logic:do_login(Socket, Login, Password),
+	{noreply, State#state{socket = Socket}};
 handle_cast(_Request, State) ->
 	{noreply, State}.
 
