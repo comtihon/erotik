@@ -114,6 +114,8 @@ handle_cast({connect, {api, Config}}, State) ->
 	{ok, Socket} = gen_tcp:connect(Host, Port, [{active, false}], Timeout),  %TODO change to active true and stream dencoding
 	ok = me_logic:do_login(Socket, Login, Password),
 	{noreply, State#state{socket = Socket}};
+handle_cast(halt, State) ->
+	{stop, normal, State};
 handle_cast(_Request, State) ->
 	{noreply, State}.
 
@@ -157,7 +159,9 @@ handle_info(_Info, State) ->
 %%--------------------------------------------------------------------
 -spec(terminate(Reason :: (normal | shutdown | {shutdown, term()} | term()),
 		State :: #state{}) -> term()).
-terminate(_Reason, _State) ->
+terminate(_Reason, #state{socket = Socket, ssh_ref = SShRef}) ->
+	me_ssh:close(SShRef),
+	me_api:close(Socket),
 	ok.
 
 %%--------------------------------------------------------------------

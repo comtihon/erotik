@@ -12,7 +12,11 @@
 -include("me_transport.hrl").
 
 %% API
--export([read_sentence/1, write_sentence/2, read_block/1]).
+-export([read_sentence/1, write_sentence/2, read_block/1, close/1]).
+
+close(undefined) -> ok;
+close(Socket) ->
+	catch (gen_tcp:close(Socket)).
 
 write_sentence(Socket, Sentence) ->
 	lists:foreach(fun(Word) -> write_word(Socket, Word) end, Sentence),
