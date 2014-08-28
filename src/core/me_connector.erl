@@ -12,7 +12,7 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/2]).
+-export([start_link/2, start/2]).
 
 %% gen_server callbacks
 -export([init/1,
@@ -47,6 +47,11 @@ start_link(Name, Config) when not is_atom(Name) ->
 	start_link(list_to_atom(Name), Config);
 start_link(Name, Config) ->
 	gen_server:start_link({local, Name}, ?MODULE, Config, []).
+
+start(Name, Config) when not is_atom(Name) ->
+	start(list_to_atom(Name), Config);
+start(Name, Config) ->
+	gen_server:start({local, Name}, ?MODULE, Config, []).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -91,6 +96,10 @@ handle_call({command, List}, _From, State = #state{socket = S}) when S /= undefi
 handle_call({command, List}, From, State = #state{ssh_ref = SSHRef, channel_ids = Dict}) -> %working through ssh
 	ChannelId = me_logic:send_command(SSHRef, List),
 	{noreply, State#state{channel_ids = dict:append(ChannelId, From, Dict)}};
+handle_call(disconnect, _From, State = #state{socket = Socket, ssh_ref = SShRef}) ->
+	me_ssh:close(SShRef),
+	me_api:close(Socket),
+	{reply, ok, State};
 handle_call(_Request, _From, State) ->
 	{reply, ok, State}.
 
