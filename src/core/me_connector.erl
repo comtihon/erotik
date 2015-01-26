@@ -28,7 +28,7 @@
 {
 	socket :: port(),
 	ssh_ref :: pid(),
-	channel_ids :: dict:dict()
+	channel_ids :: dict()
 }).
 
 %%%===================================================================
@@ -96,6 +96,11 @@ handle_call({command, List}, _From, State = #state{socket = S}) when S /= undefi
 handle_call({command, List}, From, State = #state{ssh_ref = SSHRef, channel_ids = Dict}) -> %working through ssh
 	ChannelId = me_logic:send_command(SSHRef, List),
 	{noreply, State#state{channel_ids = dict:append(ChannelId, From, Dict)}};
+handle_call({connect, {api, Config}}, _From, State) ->
+	{Host, Port, Login, Password, Timeout} = parse_params(Config),
+	% {ok, Socket} = gen_tcp:connect(Host, Port, [{active, false}], Timeout),  %TODO change to active true and stream dencoding
+	{ok, Socket} = login(Login, Password, Host, Port, Timeout),
+	{reply, ok, State#state{socket = Socket}};	
 handle_call(disconnect, _From, State = #state{socket = Socket, ssh_ref = SShRef}) ->
 	me_ssh:close(SShRef),
 	me_api:close(Socket),
@@ -118,11 +123,6 @@ handle_cast({connect, {ssh, Config}}, State) ->
 	{Host, Port, Login, Password, Timeout} = parse_params(Config),
 	{ok, SSHRef} = me_ssh:connect(Host, Port, Login, Password, Timeout),
 	{noreply, State#state{ssh_ref = SSHRef, channel_ids = dict:new()}};
-handle_cast({connect, {api, Config}}, State) ->
-	{Host, Port, Login, Password, Timeout} = parse_params(Config),
-	{ok, Socket} = gen_tcp:connect(Host, Port, [{active, false}], Timeout),  %TODO change to active true and stream dencoding
-	ok = me_logic:do_login(Socket, Login, Password),
-	{noreply, State#state{socket = Socket}};
 handle_cast(halt, State) ->
 	{stop, normal, State};
 handle_cast(_Request, State) ->
@@ -197,3 +197,16 @@ parse_params(Config) ->
 	Password = proplists:get_value(password, Config),
 	Timeout = proplists:get_value(timeout, Config, infinity),
 	{Host, Port, Login, Password, Timeout}.
+	
+login(Login, Password, Host, Port, Timeout) ->
+	{ok, Socket} = gen_tcp:connect(Host, Port, [{active, false}], Timeout),  %TODO change to active true and stream dencoding
+	case me_logic:do_login(Socket, Login, Password) of
+		ok ->
+			io:format("Connected~n"),
+			{ok, Socket};
+		err ->
+			ok = gen_tcp:close(Socket),
+			timer:sleep(1000),
+			io:format("Reconnecting~n"),
+			login(Login, Password, Host, Port, Timeout)
+	end.

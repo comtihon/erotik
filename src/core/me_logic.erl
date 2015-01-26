@@ -26,8 +26,12 @@ do_login(Socket, Login, Password) ->
 	Hash = count_hash(Password, Salt),
 	LoginRequest = form_login_sentence(Login, Hash),
 	me_api:write_sentence(Socket, LoginRequest),
-	{done, ["!done"]} = me_api:read_sentence(Socket),
-	ok.
+	case me_api:read_sentence(Socket) of
+		{done, ["!done"]} ->
+			ok;
+		{trap, ["!trap", "=message=cannot log in"]} ->
+			err
+	end.
 
 %% @private
 get_salt({done, LoginGreeting}) ->
