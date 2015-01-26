@@ -16,13 +16,17 @@
 -spec api_connect(string(), string(), integer(), string(), string()) -> {ok, pid()}.
 api_connect(Name, Host, Port, Login, Password) ->
 	Config = [{host, Host}, {port, Port}, {login, Login}, {password, Password}],
-	me_connector:start_link(Name, {api, Config}).
+	{ok, Pid} = me_connector:start_link(Name, []),
+	ok = gen_server:call(Pid, {connect, {api, Config}}, 10 * 1000),
+	{ok, Pid}.
 
 %% same as api_connect, but with timeout in milliseconds
 -spec api_connect(string(), string(), integer(), string(), string(), integer()) -> {ok, pid()}.
 api_connect(Name, Host, Port, Login, Password, Timeout) ->
 	Config = [{host, Host}, {port, Port}, {login, Login}, {password, Password}, {timeout, Timeout}],
-	me_connector:start_link(Name, {api, Config}).
+	{ok, Pid} = me_connector:start_link(Name, []),
+	ok = gen_server:call(Pid, {connect, {api, Config}}, 10 * 1000),
+	{ok, Pid}.
 
 -spec ssh_connect(string(), string(), integer(), string(), string()) -> {ok, pid()}.
 ssh_connect(Name, Host, Port, Login, Password) ->
